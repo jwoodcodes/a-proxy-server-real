@@ -2,7 +2,7 @@ const axios = require("axios");
 
 // MongoDB API URL and API Key
 const MONGODB_API_URL =
-  "https://data.mongodb-api.com/app/data-pqtmg/endpoint/data/v1/action";
+  "https://data.mongodb-api.com/app/data-pqtmg/endpoint/data/v1/action/deleteMany";
 const API_KEY =
   "ke8FM7cCVbbhpaCbxB7kkbqR5X6YmQp4cMMmocbCAvozdbhMbZaJCLmHaLLGGt4M";
 
@@ -24,41 +24,49 @@ module.exports = async (req, res) => {
 
     // First clear the MongoDB collections
     console.log("Clearing MongoDB collections...");
-    await Promise.all([
-      // Clear first collection
-      axios.post(
-        MONGODB_API_URL,
-        {
-          Collection: "weeklyPropData",
-          Database: "dailydynasties",
-          Action: "deleteMany",
-          filter: {},
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": API_KEY,
+    try {
+      await Promise.all([
+        // Clear first collection
+        axios.post(
+          MONGODB_API_URL,
+          {
+            collection: "weeklyPropData",
+            database: "dailydynasties",
+            dataSource: "Cluster0",
+            filter: {},
           },
-        }
-      ),
-      // Clear second collection
-      axios.post(
-        MONGODB_API_URL,
-        {
-          Collection: "prizepicksWeeklyPropsData",
-          Database: "dailydynasties",
-          Action: "deleteMany",
-          filter: {},
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": API_KEY,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "api-key": API_KEY,
+            },
+          }
+        ),
+        // Clear second collection
+        axios.post(
+          MONGODB_API_URL,
+          {
+            collection: "prizepicksWeeklyPropsData",
+            database: "dailydynasties",
+            dataSource: "Cluster0",
+            filter: {},
           },
-        }
-      ),
-    ]);
-    console.log("MongoDB collections cleared");
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "api-key": API_KEY,
+            },
+          }
+        ),
+      ]);
+      console.log("MongoDB collections cleared");
+    } catch (mongoError) {
+      console.error("MongoDB Error:", {
+        message: mongoError.message,
+        response: mongoError.response?.data,
+      });
+      // Continue even if MongoDB fails
+    }
 
     // Then fetch API data (keep existing API fetch code)
     const api1Response = await axios.get(
