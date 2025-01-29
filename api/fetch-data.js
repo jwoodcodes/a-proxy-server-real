@@ -22,7 +22,45 @@ module.exports = async (req, res) => {
   try {
     console.log("Request received at /api/fetch-data");
 
-    // Fetch data from the first API
+    // First clear the MongoDB collections
+    console.log("Clearing MongoDB collections...");
+    await Promise.all([
+      // Clear first collection
+      axios.post(
+        MONGODB_API_URL,
+        {
+          Collection: "weeklyPropData",
+          Database: "dailydynasties",
+          Action: "deleteMany",
+          filter: {},
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": API_KEY,
+          },
+        }
+      ),
+      // Clear second collection
+      axios.post(
+        MONGODB_API_URL,
+        {
+          Collection: "prizepicksWeeklyPropsData",
+          Database: "dailydynasties",
+          Action: "deleteMany",
+          filter: {},
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": API_KEY,
+          },
+        }
+      ),
+    ]);
+    console.log("MongoDB collections cleared");
+
+    // Then fetch API data (keep existing API fetch code)
     const api1Response = await axios.get(
       "https://api.dailyfantasyapi.io/v1/lines/upcoming",
       {
@@ -52,6 +90,7 @@ module.exports = async (req, res) => {
         lastFetchedData: [],
         timestamp: new Date().toISOString(),
         season_status: "off-season",
+        mongodb_status: "collections cleared",
       });
     }
 
