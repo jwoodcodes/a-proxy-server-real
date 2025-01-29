@@ -34,10 +34,10 @@ module.exports = async (req, res) => {
           .post(
             deleteEndpoint,
             {
-              collection: "weeklyPropData",
-              database: "dailydynasties",
               dataSource: "Cluster0",
-              filter: {},
+              database: "dailydynasties",
+              collection: "weeklyPropData",
+              filter: {}, // Empty filter to delete all documents
             },
             {
               headers: {
@@ -56,10 +56,10 @@ module.exports = async (req, res) => {
           .post(
             deleteEndpoint,
             {
-              collection: "prizepicksWeeklyPropsData",
-              database: "dailydynasties",
               dataSource: "Cluster0",
-              filter: {},
+              database: "dailydynasties",
+              collection: "prizepicksWeeklyPropsData",
+              filter: {}, // Empty filter to delete all documents
             },
             {
               headers: {
