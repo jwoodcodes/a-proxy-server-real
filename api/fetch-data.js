@@ -22,104 +22,44 @@ module.exports = async (req, res) => {
   try {
     console.log("Request received at /api/fetch-data");
 
-    // Fetch data from both APIs
-    const [api1Response, api2Response] = await Promise.all([
-      axios.get("https://api.dailyfantasyapi.io/v1/lines/upcoming", {
-        headers: { "x-api-key": "52226ad0-6d4a-49fe-8299-4d4c10480166" },
-        params: { sportsbook: "Underdog", league: "NFL" },
-      }),
-      axios.get("https://api.dailyfantasyapi.io/v1/lines/upcoming", {
-        headers: { "x-api-key": "52226ad0-6d4a-49fe-8299-4d4c10480166" },
-        params: { sportsbook: "PrizePicks", league: "NFL" },
-      }),
-    ]);
+    // Fetch data from the first API
+    const api1Response = await axios.get(
+      "https://api.dailyfantasyapi.io/v1/lines/upcoming",
+      {
+        headers: {
+          "x-api-key": "52226ad0-6d4a-49fe-8299-4d4c10480166",
+        },
+        params: {
+          sportsbook: "Underdog",
+          league: "NFL",
+        },
+      }
+    );
+
+    // Log the API response for debugging
+    console.log("API Response:", {
+      status: api1Response.status,
+      dataLength: api1Response.data ? Object.keys(api1Response.data).length : 0,
+      data: api1Response.data,
+    });
 
     const api1Data = api1Response.data;
-    const api2Data = api2Response.data;
 
-    // Even if no new data, clear old data from MongoDB
-    await Promise.all([
-      // Clear first collection
-      axios.post(
-        MONGODB_API_URL,
-        {
-          Collection: "weeklyPropData",
-          Database: "dailydynasties",
-          Action: "deleteMany",
-          filter: {},
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": API_KEY,
-          },
-        }
-      ),
-      // Clear second collection
-      axios.post(
-        MONGODB_API_URL,
-        {
-          Collection: "prizepicksWeeklyPropsData",
-          Database: "dailydynasties",
-          Action: "deleteMany",
-          filter: {},
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": API_KEY,
-          },
-        }
-      ),
-    ]);
-
-    // If we have new data, insert it
-    if (api1Data && api1Data.length > 0) {
-      await axios.post(
-        MONGODB_API_URL,
-        {
-          data: api1Data,
-          Collection: "weeklyPropData",
-          Database: "dailydynasties",
-          Action: "insertMany",
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": API_KEY,
-          },
-        }
-      );
+    // Handle off-season case
+    if (!api1Data || (Array.isArray(api1Data) && api1Data.length === 0)) {
+      return res.status(200).json({
+        message: "No NFL games available (possibly off-season)",
+        lastFetchedData: [],
+        timestamp: new Date().toISOString(),
+        season_status: "off-season",
+      });
     }
 
-    if (api2Data && api2Data.length > 0) {
-      await axios.post(
-        MONGODB_API_URL,
-        {
-          data: api2Data,
-          Collection: "prizepicksWeeklyPropsData",
-          Database: "dailydynasties",
-          Action: "insertMany",
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": API_KEY,
-          },
-        }
-      );
-    }
-
-    // Send response
+    // Send successful response with data
     res.status(200).json({
-      message:
-        api1Data.length === 0
-          ? "No NFL games available (possibly off-season)"
-          : "Data processed successfully",
-      lastFetchedData: [api1Data, api2Data],
+      message: "Data processed successfully",
+      lastFetchedData: [api1Data],
       timestamp: new Date().toISOString(),
-      season_status: api1Data.length === 0 ? "off-season" : "in-season",
-      mongodb_status: "collections cleared",
     });
   } catch (error) {
     console.error("Error details:", {
