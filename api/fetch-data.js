@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
     try {
       const deleteEndpoint = `${MONGODB_BASE_URL}/action/deleteMany`;
       console.log("Attempting MongoDB delete with payload:", {
-        dataSource: "Cluster0",
+        dataSource: "DailyDynasties",
         database: "dailydynasties",
         collection: "weeklyPropData",
       });
@@ -37,15 +37,14 @@ module.exports = async (req, res) => {
           .post(
             deleteEndpoint,
             JSON.stringify({
-              // Explicitly stringify the payload
-              dataSource: "Cluster0",
+              dataSource: "DailyDynasties",
               database: "dailydynasties",
               collection: "weeklyPropData",
               filter: {},
             }),
             {
               headers: {
-                "Content-Type": "application/json", // Back to application/json
+                "Content-Type": "application/json",
                 "api-key": API_KEY,
               },
             }
@@ -59,24 +58,23 @@ module.exports = async (req, res) => {
               status: error.response?.status,
               data: error.response?.data,
               message: error.message,
-              request: error.config?.data, // Log the request payload
+              request: error.config?.data,
             });
             throw error;
           }),
-        // Clear second collection
+        // Second collection
         axios
           .post(
             deleteEndpoint,
-            {
-              dataSource: "Cluster0",
+            JSON.stringify({
+              dataSource: "DailyDynasties",
               database: "dailydynasties",
               collection: "prizepicksWeeklyPropsData",
-              filter: {}, // Empty filter to delete all documents
-            },
+              filter: {},
+            }),
             {
               headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Request-Headers": "*",
                 "api-key": API_KEY,
               },
             }
@@ -84,6 +82,15 @@ module.exports = async (req, res) => {
           .then((response) => {
             console.log("Second collection response:", response.data);
             return response;
+          })
+          .catch((error) => {
+            console.error("Second collection delete error:", {
+              status: error.response?.status,
+              data: error.response?.data,
+              message: error.message,
+              request: error.config?.data,
+            });
+            throw error;
           }),
       ]);
 
