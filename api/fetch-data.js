@@ -2,7 +2,7 @@ const axios = require("axios");
 
 // MongoDB API URL and API Key
 const MONGODB_BASE_URL =
-  "https://data.mongodb-api.com/app/data-pqtmg/endpoint/data/v1/action";
+  "https://data.mongodb-api.com/app/data-pqtmg/endpoint/data/v1";
 const API_KEY =
   "ke8FM7cCVbbhpaCbxB7kkbqR5X6YmQp4cMMmocbCAvozdbhMbZaJCLmHaLLGGt4M";
 
@@ -25,31 +25,43 @@ module.exports = async (req, res) => {
     // First clear the MongoDB collections
     console.log("Attempting to clear MongoDB collections...");
     try {
-      const deleteEndpoint = `${MONGODB_BASE_URL}/deleteMany`;
-      console.log("MongoDB endpoint:", deleteEndpoint);
+      const deleteEndpoint = `${MONGODB_BASE_URL}/action/deleteMany`;
+      console.log("Attempting MongoDB delete with payload:", {
+        dataSource: "Cluster0",
+        database: "dailydynasties",
+        collection: "weeklyPropData",
+      });
 
       const mongoResponses = await Promise.all([
-        // Clear first collection
         axios
           .post(
             deleteEndpoint,
-            {
+            JSON.stringify({
+              // Explicitly stringify the payload
               dataSource: "Cluster0",
               database: "dailydynasties",
               collection: "weeklyPropData",
-              filter: {}, // Empty filter to delete all documents
-            },
+              filter: {},
+            }),
             {
               headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Request-Headers": "*",
+                "Content-Type": "application/json", // Back to application/json
                 "api-key": API_KEY,
               },
             }
           )
           .then((response) => {
-            console.log("First collection response:", response.data);
+            console.log("First collection delete response:", response.data);
             return response;
+          })
+          .catch((error) => {
+            console.error("First collection delete error:", {
+              status: error.response?.status,
+              data: error.response?.data,
+              message: error.message,
+              request: error.config?.data, // Log the request payload
+            });
+            throw error;
           }),
         // Clear second collection
         axios
@@ -80,12 +92,7 @@ module.exports = async (req, res) => {
         mongoResponses.map((r) => r.data)
       );
     } catch (mongoError) {
-      console.error("MongoDB Error Details:", {
-        message: mongoError.message,
-        response: mongoError.response?.data,
-        status: mongoError.response?.status,
-        headers: mongoError.response?.headers,
-      });
+      console.error("MongoDB Error Full Details:", mongoError);
       // Continue even if MongoDB fails
     }
 
