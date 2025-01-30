@@ -134,6 +134,10 @@ module.exports = async (req, res) => {
         timestamp: new Date().toISOString(),
         season_status: "off-season",
         mongodb_status: "collections cleared",
+        mongodb_details: mongoResponses.map((r) => ({
+          collection: r.config.data.collection,
+          deletedCount: r.data.deletedCount,
+        })),
       });
     }
 
@@ -142,6 +146,11 @@ module.exports = async (req, res) => {
       message: "Data processed successfully",
       lastFetchedData: [api1Data],
       timestamp: new Date().toISOString(),
+      mongodb_status: "collections cleared",
+      mongodb_details: mongoResponses.map((r) => ({
+        collection: r.config.data.collection,
+        deletedCount: r.data.deletedCount,
+      })),
     });
   } catch (error) {
     console.error("Error details:", {
