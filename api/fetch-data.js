@@ -22,6 +22,10 @@ module.exports = async (req, res) => {
   try {
     console.log("Request received at /api/fetch-data");
 
+    // Initialize mongoResponses variable in outer scope
+    let mongoResponses = [];
+    let mongoStatus = "not attempted";
+
     // First clear the MongoDB collections
     console.log("Attempting to clear MongoDB collections...");
     try {
@@ -32,7 +36,7 @@ module.exports = async (req, res) => {
         collection: "weeklyPropData",
       });
 
-      const mongoResponses = await Promise.all([
+      mongoResponses = await Promise.all([
         axios
           .post(
             deleteEndpoint,
@@ -94,16 +98,18 @@ module.exports = async (req, res) => {
           }),
       ]);
 
+      mongoStatus = "collections cleared";
       console.log(
         "MongoDB collections cleared with responses:",
         mongoResponses.map((r) => r.data)
       );
     } catch (mongoError) {
       console.error("MongoDB Error Full Details:", mongoError);
+      mongoStatus = "error clearing collections";
       // Continue even if MongoDB fails
     }
 
-    // Then fetch API data (keep existing API fetch code)
+    // Then fetch API data
     const api1Response = await axios.get(
       "https://api.dailyfantasyapi.io/v1/lines/upcoming",
       {
@@ -133,11 +139,13 @@ module.exports = async (req, res) => {
         lastFetchedData: [],
         timestamp: new Date().toISOString(),
         season_status: "off-season",
-        mongodb_status: "collections cleared",
-        mongodb_details: mongoResponses.map((r) => ({
-          collection: r.config.data.collection,
-          deletedCount: r.data.deletedCount,
-        })),
+        mongodb_status: mongoStatus,
+        mongodb_details: mongoResponses.length
+          ? mongoResponses.map((r) => ({
+              collection: JSON.parse(r.config.data).collection,
+              deletedCount: r.data.deletedCount,
+            }))
+          : [],
       });
     }
 
@@ -146,11 +154,13 @@ module.exports = async (req, res) => {
       message: "Data processed successfully",
       lastFetchedData: [api1Data],
       timestamp: new Date().toISOString(),
-      mongodb_status: "collections cleared",
-      mongodb_details: mongoResponses.map((r) => ({
-        collection: r.config.data.collection,
-        deletedCount: r.data.deletedCount,
-      })),
+      mongodb_status: mongoStatus,
+      mongodb_details: mongoResponses.length
+        ? mongoResponses.map((r) => ({
+            collection: JSON.parse(r.config.data).collection,
+            deletedCount: r.data.deletedCount,
+          }))
+        : [],
     });
   } catch (error) {
     console.error("Error details:", {
